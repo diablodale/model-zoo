@@ -42,11 +42,11 @@ python -m tf2onnx.convert \
     --saved-model . \
     --opset $OPSET \
     --inputs-as-nchw input \
-    --output movenet_multipose_lightning_1_int32_dynamic.onnx
+    --output "movenet_multipose_lightning_1_int32_op${OPSET}_dynamic.onnx"
 
 # set fixed input size of H=160 W=256 so that Onnx optimizes on load
 python -m onnxruntime.tools.make_dynamic_shape_fixed \
     --input_name input \
     --input_shape 1,3,160,256 \
-    movenet_multipose_lightning_1_int32_dynamic.onnx \
-    movenet_multipose_lightning_1_int32_H160_W256.onnx
+    "movenet_multipose_lightning_1_int32_op${OPSET}_dynamic.onnx" \
+    "movenet_multipose_lightning_1_int32_op${OPSET}_H160_W256.onnx"
