@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -e
+
+# movenet/multipose/lightning
+#
+# Expects 1xHxWx3 where HW multiple 32 and can be determined at runtime
+# Channel order is RGB with values 0-255
+# Prep input image so larger size is equal to 256 pixels and
+# pad other side to keep image's original aspect ratio, e.g. make a typical landscape
+# image tensor so the padding is on the top/bottom to make it multiple of 32
+
+# get opset
+OPSET=$1
+
+# set directories
+SCRIPT_FULL_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_LAST_DIR="${SCRIPT_FULL_DIR##*/}"
+if [ -f "$PWD/.gitignore" ]; then
+    BUILDDIR="${PWD}/build/${SCRIPT_LAST_DIR}"
+elif [ -f "$PWD/build" ]; then
+    BUILDDIR="${PWD}/../../build/${SCRIPT_LAST_DIR}"
+fi
+mkdir -p "$BUILDDIR"
+cd "$BUILDDIR"
+
+# download upstream model
+if [ ! -f "movenet_multipose_lightning_1.tar.gz" ]; then
+    curl 'https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed' \
+        --output movenet_multipose_lightning_1.tar.gz \
+        --retry 3 --location
+fi
+
+# extract upstream model
+tar -xvf movenet_multipose_lightning_1.tar.gz
+if [ ! -f "saved_model.pb" ]; then
+    echo "error: upstream model is corrupt"
+    exit 1
+fi
+
+# convert to Onnx and transpose input 1HW3 to 13HW
+python -m tf2onnx.convert \
+    --saved-model . \
+    --opset $OPSET \
+    --inputs-as-nchw input \
+    --output movenet_multipose_lightning_1_int32_dynamic.onnx
+
+# set fixed input size of H=160 W=256 so that Onnx optimizes on load
+python -m onnxruntime.tools.make_dynamic_shape_fixed \
+    --input_name input \
+    --input_shape 1,3,160,256 \
+    movenet_multipose_lightning_1_int32_dynamic.onnx \
+    movenet_multipose_lightning_1_int32_H160_W256.onnx

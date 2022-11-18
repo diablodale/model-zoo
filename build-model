@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -e
+
+#############################################
+##### create and build derivative models ####
+#############################################
+
+# Onnx expects 1xCxHxW tensors as input
+# Onnx uses DirectML version 1.9+ and ONNX v1.12.0 supports up to opset 15
+OPSET=15
+
+# check venv
+if [ ! -d "venv" ]; then
+    echo "error: python venv is not installed; run ./setup"
+    exit 1
+fi
+
+# activate venv
+./isvenv || source ./venv/bin/activate
+./isvenv
+if [ $? -ne 0 ]; then
+    echo "error: unable to start python venv; unable to continue"
+    exit 1
+fi
+
+# derive models
+src/movenet_multipose_lightning_1/build $OPSET

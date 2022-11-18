@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -e
+
+# check base installs
+which python3 > /dev/null
+if [ $? -ne 0 ]; then
+    echo "error: please first install python3"
+    exit 1
+fi
+which curl > /dev/null
+if [ $? -ne 0 ]; then
+    echo "error: please first install curl"
+    exit 1
+fi
+which tar > /dev/null
+if [ $? -ne 0 ]; then
+    echo "error: please first install tar"
+    exit 1
+fi
+
+# setup venv
+if [ ! -d "venv" ]; then
+    python3 -m venv ./venv
+fi
+
+# activate venv
+./isvenv || source ./venv/bin/activate
+./isvenv
+if [ $? -ne 0 ]; then
+    echo "error: unable to install and start python venv"
+    exit 1
+fi
+
+# install python libraries needed for building models
+pip install -U tensorflow tf2onnx onnxruntime onnxruntime-tools

@@ -1,0 +1,9 @@
+venv/
+build/
+
+*.gz
+*.tar
+*.pb
+*.tflite
+*.onnx
+variables/
